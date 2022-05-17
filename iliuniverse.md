@@ -32,191 +32,88 @@ The model is defined in INTERLIS language and stored in an `.ili` file.
 
 The data is in xml (considering the model) and stored as an `.xtf` file (former `.itf`).
 
---- 
-## Why you could like INTERLIS
-
-> You have your database schema in your poket. 
-
-> It's easy readable and precice.
-
-> Thanks to the nice tools, it's easy to implement in your database and in QGIS.
-
-<!--  Compared to e.g. SQL Scripts you can simply extend it. -->
-
---- 
+---
 
 # <!--fit--> INTERLIS Modelling in 10 Minutes
 
 --- 
 
-## Model Structure
+## Beispiel Staudamm Inventar
+
+
+![Stausee](./assets/Stausee.png)
+
+---
+
+## Staudamm
+
+- Name
+- Baujahr
+- Bauweise (z.B. Bogenstaumauer, Gewichtmauer, ...)
+- Höhe
+- Reservoire grösse
+- Letzte sanierung
+- Lage
+- Detailgeometrie
+
+![bg right 50%](./assets/LageDetailgeometrie.png)
+
+---
+
+## Staudamm in INTERLIS
+
+Bund Modell
 ```
 INTERLIS 2.3;
-MODEL Wildruhezonen_LV95_V2_1 (de)
-AT "https://models.geo.admin.ch/BAFU/"
-VERSION "2020-04-21"  =
-  DOMAIN
-    Punkt = GeometryCHLV95_V1.Coord2;
-  TOPIC Wildruhezonen =
-    CLASS Routennetz =
-      Name : MANDATORY TEXT*80;
-    END Routennetz;
-  END Wildruhezonen;
-END Wildruhezonen_LV95_V2_1.
-```
-
-![bg right 50%](./assets/interlis_model_structure.png)
-
-<!-- A model contains Units, Functions, Domains, Classes, Structures and Topic definitions.
-Contains all definitions to describe a part of the modeled reality.
--->
-
---- 
-## Classes
-
-**Syntax**
-```
-ClassDef =  'CLASS' Class-Name '='
-              { AttributeDef }
-            'END' Class-Name ';'.
-```
-
-**Example**
-```   
-CLASS Wildruhezone =
-  ObjNummer : MANDATORY 0 .. 9999;
-  Name : MANDATORY TEXT*80;
-END Wildruhezone;
-```
-<!-- Classes are like templates to create objects (class elements) from. Or entities in the context of databases. They have properties described as attributes. -->
-
---- 
-## Attributes
-**Syntax**
-```
-AttributDef = Attribute-Name : [MANDATORY] 
-                               Type | DomainRef;
-
-DomainRef = [ Model-Name '.' [ Topic-Name '.' ] ] Domain-Name
-```
-**Example**
-```
-Name : MANDATORY TEXT*80;
-Schutzstatus : MANDATORY Wildruhezonen_Codelisten_V2_1.Codelisten.Schutzstatus_CatRef;
-```
-
----
-## Structures
-**Syntax**
-```
-StructureDef =  'STRUCTURE' Struct-Name '='
-                  { AttributeDef }
-                'END' Struct-Name ';'.
-```
-**Example**
-```
-STRUCTURE PolygonStructure =
-  Polygon: SURFACE WITH (STRAIGHTS) VERTEX GeometryCHLV03_V1.Coord2 WITHOUT OVERLAPS > 0.001;
-END PolygonStructure;
-
-STRUCTURE MultiPolygon =
-  Polygons: BAG {1..*} OF PolygonStructure;
-END MultiPolygon;
-```
-<!-- Formally similar to classes are Structures but factually they are more like types or value ranges. They describe how more complicated properties of objects are constructed. The structure elements, have no identity of their own, but are values of attributes of an object. So they cannot exist without belonging to an object of a class. -->
---- 
-
-## Accociations 
-**Syntax**
-```
-AssociationDef = 'ASSOCIATION' '='
-                   { RoleDef }
-                 'END' ';'.
-RoleDef = Role-Name '--' ClassRef ';'.
-```
-**Example**
-```
-ASSOCIATION RoutennetzWildruhezone =
-  WRZ_Routennetz -- {0..*} Routennetz;
-  WRZ -<#> {1} Wildruhezone;
-END RoutennetzWildruhezone;
-```
-
----
-## Extends
-```
-CLASS Wildruhezone =
-  ObjNummer : MANDATORY 0 .. 9999;
-  Name : MANDATORY TEXT*80;
-END Wildruhezone;
-
-CLASS Wildruhezone (EXTENDED) =
-    /** Zuordnung der Zielarten Schutzbestimmung zur Wildruhezone */
-    Zielart: GL_Wildruhezonen_Codelisten_V1.Codelisten.Zielarten_CatRef;
-END Wildruhezone;
-```
-<!-- Of course to extend classes, topics needs to be extended as well. And with the class attributes can be extended as well. -->
-
----
-## Types of classes
-- Concrete
-- Abstract
-- Final
-- Derivate/Extended
-
-```
-CLASS Wildruhezone (ABSTRACT)=
-END Wildruhezone;
-```
-<!-- Keywords to enforce or prevent specialization -->
-
----
-## What are catalogues?
-
-Catalogues are external codelists that can be used like `Enumerations` but less static.
-Catalogues are data but "belong" to the data model.
-
-<!-- You can use the "old" model but update your catalogue. -->
-
----
-
-## Structure of a catalogue
-
-Catalogues base on the model `CatalogueObjects_V1` and extend the abstract classes and structures
-```
-CLASS Bestimmungen_Catalogue
-EXTENDS CatalogueObjects_V1.Catalogues.Item =
-    Code : MANDATORY TEXT*5;
-    Description : MANDATORY LocalisationCH_V1.MultilingualText;
-END Bestimmungen_Catalogue;
-
-STRUCTURE Bestimmungen_CatRef
-EXTENDS CatalogueObjects_V1.Catalogues.MandatoryCatalogueReference =
-    Reference (EXTENDED) : MANDATORY REFERENCE TO (EXTERNAL) Bestimmungen_Catalogue;
-END Bestimmungen_CatRef;
+IMPORTS Units;
+CLASS Staudamm =
+  name: MANDATORY TEXT*80;
+  baujahr: 1000..3000;
+  bauweise: (Bogenstaumauer, Gewichtmauer, Pfeilermauer);
+  hoehe: 1..400 [Units.Meter];
+  letzte_sanierung: 1000..3000;
+  lage: GeometryCHLV95_V1.Coord2;
+  detailgeometrie: SURFACE WITH (STRAIGHTS) VERTEX GeometryCHLV95_V1.Coord2
+END Staudamm;
 ```
 
 ---
 
-## Reference to the catalogue
+## Extended model
+
+Kanton Modell
 ```
-CLASS Wildruhezone_Teilobjekt =
-  Bestimmungen : MANDATORY Wildruhezonen_Codelisten_V2_1.Codelisten.Bestimmungen_CatRef;
-END Wildruhezone_Teilobjekt;
+CLASS StaudammCanton EXTENDS Staudamm =
+    letzte_inspektion: INTERLIS.Date;
+    zustand: (gut,schlecht);
+END StaudammCanton;
 ```
+
 ---
+
+## Extended model
+
+Ingenieur Büro modell:
+```
+CLASS Inspektor =
+    name: TEXT*80;
+END Inspektor;
+
+CLASS StaudammLocal EXTENDS StaudammCanton =
+    inspektor: Inspektor;
+END StaudammLocal;
+
+ASSOCIATION = 
+    StaudammLocal -- {1} StaudammLocal
+    Inspektor -- {*} Inspektor
+END;
+```
+
+---
+
 ## Have a look at a simple model
 [Buildings](./assets/demo_models/super_simple_buildings_V1.ili)
 
----
-## Have a look at the real model [Wildruhezonen_V2_1](./assets/demo_models/Wildruhezonen_V2_1.ili)
-
-![uml](./assets/UML.png)
-
-<!-- Mention IMPORTS -->
----
-## Check out the real model extended for Glarus
-[Wildruhezonen_V2_1](./assets/demo_models/GL_Wildruhezonen_V1_2020-03-31.ili)
 
 ---
 # <!--fit-->  INTERLIS implementation workflow and tools
@@ -227,10 +124,6 @@ END Wildruhezone_Teilobjekt;
 
 ---
 
-# ili2 Tools
-made by Eisenhut Informatik 
-
----
 ## Compiler ili2c
 
 The INTERLIS Compiler checks an INTERLIS model if the constructs of the language INTERLIS were applied correctly. It reports syntactic errors in the model with the line number so that they can be corrected by the modeler.
@@ -265,19 +158,6 @@ http://models.interlis.ch/ilisite.xml -> http://models.geo.kgk-cgc.ch/ilisite.xm
 ---
 
 # <!--fit--> 🧁 QGIS MODEL BAKER 
-
----
-## <!--fit--> While INTERLIS is the hard stuff
-
-![bg](./assets/walter_white.webp)
-
-<!-- I might sound like a nerd, but in fact you can get addicted to it. Sometimes ideas appear to model everything in INTERLIS. It's a common thing when you have to do with people using INTERLIS. In fact I thought about to make this presentation (and an abstract and extended version of it) in INTERLIS. -->
-
----
-
-## <!--fit--> MODEL BAKER is the beginner drug
-
-![bg](./assets/johnny_depp.webp)
 
 ---
 # <!--fit--> What is MODEL BAKER?
@@ -347,15 +227,4 @@ See https://usabilityhub.opengis.ch/
 ## Metaconfiguration and Toppings
 Get the additional information with the `ilidata.xml` file on the UsabILIty Hub (currently https://models.opengis.ch) and the linked repositories. 
 
----
-## Metaconfiguration and Toppings
-Settings for tools are configured in a metaconfiguration file, as well as links to topping files that contain information about GIS project.
-
-***Thus, this additional information usually consists of a metaconfiguration and any number of toppings.***
-
---- 
-![uml](./assets/usabilityhub_modelbaker.png)
-
----
-## <!--fit--> Why not using INTERLIS?
-![bg](./assets/hank_schrader.webp)
+Model baker homepage: https://opengisch.github.io/QgisModelBaker/
